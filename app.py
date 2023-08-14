@@ -10,6 +10,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chains import QAGenerationChain
 from langchain.chat_models import ChatOpenAI
+from htmlTemplates import css
 import qdrant_client
 import os
 import random
@@ -176,11 +177,13 @@ def main():
 
     st.session_state.user_question = st.chat_input("Ask your question here...")
     st.info('If you want to reset, just reload the page or remove your PDFs😉', icon="ℹ️")
-
+    
     if st.session_state.user_question:
         handle_userinput(st.session_state.user_question)
 
     with st.sidebar:
+      st.title("🤖 PDF GPT")
+      st.divider()
       st.subheader("Your documents 📄")
 
       pdf_docs = st.file_uploader(
