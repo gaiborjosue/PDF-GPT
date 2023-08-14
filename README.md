@@ -11,19 +11,17 @@ The PDF GPT Chrome Extension allows users to upload multiple PDF files and ask q
 
 ## How to Use
 
-1. **Installation**: This Chrome extension requires installation from the Chrome Web Store.
+1. **Access the App**: To use the PDF GPT - MultiPDF Assistant, simply visit the web app at [https://apdfgpt.streamlit.app](https://apdfgpt.streamlit.app) using a web browser.
 
-2. **Activation**: Once installed, click on the extension icon in the Chrome toolbar to activate the extension.
+2. **PDF Upload**: In the app interface, navigate to the "Your Documents" section. Use the "Upload your PDFs here" button to upload one or more PDF files.
 
-3. **PDF Upload**: In the extension interface, navigate to the "Your Documents" section. Use the "Upload your PDFs here" button to upload one or more PDF files.
+3. **Processing**: After uploading PDFs, click the "Process" button to extract text content, process it, and set up the conversational AI chain.
 
-4. **Processing**: After uploading PDFs, click the "Process" button to extract text content, process it, and set up the conversational AI chain.
+4. **Asking Questions**: Use the "Ask your question here..." input field to ask questions related to the content of the uploaded PDFs.
 
-5. **Asking Questions**: Use the "Ask your question here..." input field to ask questions related to the content of the uploaded PDFs.
+5. **Responses**: The app will provide responses to your questions based on the uploaded PDFs' content and the AI model's analysis.
 
-6. **Responses**: The extension will provide responses to your questions based on the uploaded PDFs' content and the AI model's analysis.
-
-7. **About and Feedback**: The extension also provides an "About" section with information about the PDF GPT - MultiPDF Assistant and a "Feedback" section where you can provide feedback or report issues.
+6. **About and Feedback**: The app also provides an "About" section with information about the PDF GPT - MultiPDF Assistant and a "Feedback" section where you can provide feedback or report issues.
 
 ## Dependencies
 

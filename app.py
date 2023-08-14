@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit_extras.colored_header import colored_header
+from streamlit_extras.stateful_button import button
 import webbrowser
 from streamlit_chat import message
 from streamlit_option_menu import option_menu
@@ -10,12 +11,32 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Qdrant
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
+from langchain.chains import QAGenerationChain
 from langchain.chat_models import ChatOpenAI
 from htmlTemplates import css, bot_template, user_template
 import qdrant_client
 import os
+import random
+import itertools
+
+@st.cache_resource
+def generate_eval(text, N, chunk):
+    n = len(text)
+    starting_indices = [random.randint(0, n-chunk) for _ in range(N)]
+    sub_sequences = [text[i:i+chunk] for i in starting_indices]
+    chain = QAGenerationChain.from_llm(ChatOpenAI(temperature=0))
+    eval_set = []
+    for i, b in enumerate(sub_sequences):
+        try:
+            qa = chain.run(b)
+            eval_set.append(qa)
+        except:
+            pass
+    eval_set_full = list(itertools.chain.from_iterable(eval_set))
+    return eval_set_full
 
 
+@st.cache_data
 def get_pdf_text(pdf_docs):
     text = ""
 
@@ -26,7 +47,7 @@ def get_pdf_text(pdf_docs):
 
     return text
 
-
+@st.cache_resource
 def get_text_chunks(text):
     text_splitter = CharacterTextSplitter(
         separator="\n",
@@ -37,7 +58,7 @@ def get_text_chunks(text):
     chunks = text_splitter.split_text(text)
     return chunks
 
-
+@st.cache_resource
 def get_vectorstore(text_chunks):
     st.session_state.client = qdrant_client.QdrantClient(
         os.getenv("QDRANT_HOST"),
@@ -61,7 +82,7 @@ def get_vectorstore(text_chunks):
     return vectorstore
 
 
-def get_conversation_chain(vectorstore):
+def get_conversation_chain(vectorstore, raw_text):
     llm = ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo')
     memory = ConversationBufferMemory(
         memory_key="chat_history", return_messages=True)
@@ -70,9 +91,10 @@ def get_conversation_chain(vectorstore):
         retriever=vectorstore.as_retriever(),
         memory=memory,
     )
+
     return conversation_chain
 
-
+@st.cache_data
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
     st.session_state.chat_history = response['chat_history']
@@ -86,9 +108,12 @@ def handle_userinput(user_question):
             with st.chat_message("assistant"):
                 st.write(mes.content)
 
+def clicked(button):
+    st.session_state.clicked[button] = True
 
 def main():
     load_dotenv()
+    # Add custom CSS
 
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
@@ -96,9 +121,52 @@ def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
 
+    if "clicked" not in st.session_state:
+        st.session_state.clicked = {1: False, 2: False}
+
+
     st.set_page_config(page_title="PDF GPT", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
     
+    st.markdown(
+        """
+        <style>
+            .css-card {
+                border-radius: 0px;
+                padding: 30px 10px 10px 10px;
+                background-color: #f8f9fa;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                margin-bottom: 10px;
+                font-family: "IBM Plex Sans", sans-serif;
+            }
+            
+            .card-tag {
+                border-radius: 0px;
+                padding: 1px 5px 1px 5px;
+                margin-bottom: 10px;
+                position: absolute;
+                left: 0px;
+                top: 0px;
+                font-size: 0.6rem;
+                font-family: "IBM Plex Sans", sans-serif;
+                color: white;
+                background-color: green;
+                }
+                
+            .css-zt5igj {left:0;
+            }
+            
+            span.css-10trblm {margin-left:0;
+            }
+            
+            div.css-1kyxreq {margin-top: -40px;
+            }
+          
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     selected = option_menu(
             menu_title=None,
             options=["PDF GPT", "About", "Feedback"],
@@ -126,8 +194,9 @@ def main():
 
         pdf_docs = st.file_uploader(
             "Upload your PDFs here and click on Process ⬆️", accept_multiple_files=True)
+      
+        if button("Process 🔍", key="process"):
 
-        if st.button("Process 🔍"):
             with st.spinner("Processing..."):
                 # Get pdf text
                 raw_text = get_pdf_text(pdf_docs)
@@ -140,7 +209,25 @@ def main():
 
                 # Conversation chain
                 st.session_state.conversation = get_conversation_chain(
-                    vectorstore)
+                    vectorstore, raw_text)
+                
+
+                st.sidebar.subheader("Auto-Generated Questions:")
+
+                eval_set = generate_eval(raw_text, N=5, chunk=3000)
+
+                for qa_pair in eval_set:
+                  st.markdown(
+                    f"""
+                    <div class="css-card">
+                      <span class="card-tag">Question</span>
+                      <p style="font-size: 12px; color: black;">{qa_pair['question']}</p>
+                      <p style="font-size: 12px; color: black;">{qa_pair['answer']}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                  )
+
                 st.success("Successfully Processed your PDFs!")
                 st.balloons()
 
@@ -153,4 +240,6 @@ def main():
 
 
 if __name__ == '__main__':
+
     main()
+
