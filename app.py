@@ -1,12 +1,16 @@
 import streamlit as st
+from streamlit_chat import message
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Qdrant
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationalRetrievalChain
+from langchain.chat_models import ChatOpenAI
+from htmlTemplates import css, bot_template, user_template
 import qdrant_client
 import os
-
 
 def get_pdf_text(pdf_docs):
   text = ""
@@ -34,10 +38,34 @@ def get_vectorstore(text_chunks, client):
   vectorstore=Qdrant(
     client=client,
     collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
-    embeddings=embeddings
+    embeddings = embeddings
   )
 
+  vectorstore.add_texts(text_chunks)
+
   return vectorstore
+
+def get_conversation_chain(vectorstore):
+  llm = ChatOpenAI()
+  memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+  conversation_chain = ConversationalRetrievalChain.from_llm(
+    llm=llm,
+    retriever=vectorstore.as_retriever(),
+    memory=memory
+  )
+
+  return conversation_chain
+
+def handle_userinput(user_question):
+  response = st.session_state.conversation({'question': user_question})
+  st.session_state.chat_history = response['chat_history']
+
+  for i, mes in enumerate(st.session_state.chat_history):
+    if i % 2 == 0:
+
+      message(mes.content, is_user=True)
+    else:
+      message(mes.content)
 
 def main():
   load_dotenv()
@@ -53,15 +81,25 @@ def main():
     vectors_config = vectors_config
   )
 
-
+  if "conversation" not in st.session_state:
+    st.session_state.conversation = None
+  
+  if "chat_history" not in st.session_state:
+    st.session_state.chat_history = None
 
   st.set_page_config(page_title="PDF GPT", page_icon=":books:")
-  st.header("Ask questions about your PDFs - PDF GPT")
-  st.text_input("Ask a question about your documents:")
-  
+  st.write(css, unsafe_allow_html=True)
+  st.header("Ask questions about your PDFs - PDF GPT :books:")
+  user_question = st.text_input("Ask a question about your documents:")
+
+  if user_question:
+    handle_userinput(user_question)
+
   with st.sidebar:
      st.subheader("Your documents")
+
      pdf_docs = st.file_uploader("Upload your PDFs here and click on Process", accept_multiple_files=True)
+
      if st.button("Process"):
       with st.spinner("Processing"):
         # Get pdf text
@@ -71,7 +109,10 @@ def main():
         text_chunks = get_text_chunks(raw_text)
 
         # Create vector storage
-        vectorstore = get_vectorstore(text_chunks)
+        vectorstore = get_vectorstore(text_chunks, client)
+
+        # Conversation chain
+        st.session_state.conversation = get_conversation_chain(vectorstore)
 
 
     
