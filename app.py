@@ -19,24 +19,25 @@ import os
 import random
 import itertools
 
-@st.cache_resource
+@st.cache_data()
 def generate_eval(text, N, chunk):
     n = len(text)
-    starting_indices = [random.randint(0, n-chunk) for _ in range(N)]
-    sub_sequences = [text[i:i+chunk] for i in starting_indices]
-    chain = QAGenerationChain.from_llm(ChatOpenAI(temperature=0))
-    eval_set = []
-    for i, b in enumerate(sub_sequences):
-        try:
-            qa = chain.run(b)
-            eval_set.append(qa)
-        except:
-            pass
-    eval_set_full = list(itertools.chain.from_iterable(eval_set))
-    return eval_set_full
+    if n != 0:
+      starting_indices = [random.randint(0, n-chunk) for _ in range(N)]
+      sub_sequences = [text[i:i+chunk] for i in starting_indices]
+      chain = QAGenerationChain.from_llm(ChatOpenAI(temperature=0))
+      eval_set = []
+      for i, b in enumerate(sub_sequences):
+          try:
+              qa = chain.run(b)
+              eval_set.append(qa)
+          except:
+              pass
+      eval_set_full = list(itertools.chain.from_iterable(eval_set))
+      return eval_set_full
 
 
-@st.cache_data
+@st.cache_data()
 def get_pdf_text(pdf_docs):
     text = ""
 
@@ -81,20 +82,20 @@ def get_vectorstore(text_chunks):
     vectorstore.add_texts(text_chunks)
     return vectorstore
 
-
-def get_conversation_chain(vectorstore, raw_text):
+@st.cache_resource
+def get_conversation_chain(_vectorstore):
     llm = ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo')
     memory = ConversationBufferMemory(
         memory_key="chat_history", return_messages=True)
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
-        retriever=vectorstore.as_retriever(),
+        retriever=_vectorstore.as_retriever(),
         memory=memory,
     )
 
     return conversation_chain
 
-@st.cache_data
+@st.cache_data(persist=True)
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
     st.session_state.chat_history = response['chat_history']
@@ -124,6 +125,11 @@ def main():
     if "clicked" not in st.session_state:
         st.session_state.clicked = {1: False, 2: False}
 
+    if "selected" not in st.session_state:
+        st.session_state.selected = "PDF GPT"
+
+    if "eval_set" not in st.session_state:
+        st.session_state.eval_set = None
 
     st.set_page_config(page_title="PDF GPT", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
@@ -150,7 +156,7 @@ def main():
                 font-size: 0.6rem;
                 font-family: "IBM Plex Sans", sans-serif;
                 color: white;
-                background-color: green;
+                background-color: #D2042D;
                 }
                 
             .css-zt5igj {left:0;
@@ -167,36 +173,27 @@ def main():
         unsafe_allow_html=True,
     )
 
-    selected = option_menu(
-            menu_title=None,
-            options=["PDF GPT", "About", "Feedback"],
-            icons=["filetype-pdf", "info-circle", "recycle"],
-            orientation="horizontal",
-            default_index=0,
-        )
-    
-
-    if selected == "PDF GPT":
-      colored_header(
+    colored_header(
           label="Ask questions about your PDFs - PDF GPT :books:",
           description=None,
           color_name="red-70"
       )
 
-      st.session_state.user_question = st.chat_input("Ask your question here...")
-      st.info('If you want to reset, just reload the page or remove your PDFs😉', icon="ℹ️")
+    st.session_state.user_question = st.chat_input("Ask your question here...")
+    st.info('If you want to reset, just reload the page or remove your PDFs😉', icon="ℹ️")
 
-      if st.session_state.user_question:
+    if st.session_state.user_question:
         handle_userinput(st.session_state.user_question)
 
-      with st.sidebar:
-        st.subheader("Your documents 📄")
+    with st.sidebar:
+      st.subheader("Your documents 📄")
 
-        pdf_docs = st.file_uploader(
+      pdf_docs = st.file_uploader(
             "Upload your PDFs here and click on Process ⬆️", accept_multiple_files=True)
-      
-        if button("Process 🔍", key="process"):
+        
+      st.button('Process 🔍', on_click=clicked, args=[1])
 
+      if st.session_state.clicked[1]:
             with st.spinner("Processing..."):
                 # Get pdf text
                 raw_text = get_pdf_text(pdf_docs)
@@ -209,14 +206,14 @@ def main():
 
                 # Conversation chain
                 st.session_state.conversation = get_conversation_chain(
-                    vectorstore, raw_text)
+                    vectorstore)
                 
 
                 st.sidebar.subheader("Auto-Generated Questions:")
 
-                eval_set = generate_eval(raw_text, N=5, chunk=3000)
+                st.session_state.eval_set = generate_eval(raw_text, N=5, chunk=3000)
 
-                for qa_pair in eval_set:
+                for qa_pair in st.session_state.eval_set:
                   st.markdown(
                     f"""
                     <div class="css-card">
@@ -230,16 +227,8 @@ def main():
 
                 st.success("Successfully Processed your PDFs!")
                 st.balloons()
-
-    if selected == "About":
-        st.header("PDF GPT - MultiPDF assistant")
-
-    if selected == "Feedback":
-        webbrowser.open("https://github.com/gaiborjosue/PDF-GPT/issues")
         
 
-
 if __name__ == '__main__':
-
     main()
 

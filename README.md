@@ -8,6 +8,7 @@ The PDF GPT Chrome Extension allows users to upload multiple PDF files and ask q
 - Interact with the GPT-3.5 conversational AI model to ask questions about the uploaded PDFs.
 - Seamless integration with Streamlit and LangChain libraries.
 - User-friendly interface with responsive design.
+- Gives 5 auto-generated Q/A so you can understand better the documents before-hand.
 
 ## How to Use
 
@@ -15,7 +16,7 @@ The PDF GPT Chrome Extension allows users to upload multiple PDF files and ask q
 
 2. **PDF Upload**: In the app interface, navigate to the "Your Documents" section. Use the "Upload your PDFs here" button to upload one or more PDF files.
 
-3. **Processing**: After uploading PDFs, click the "Process" button to extract text content, process it, and set up the conversational AI chain.
+3. **Processing**: After uploading PDFs, click the "Process" button to extract text content, process it, and set up the conversational AI chain. This will also autogenerate 5 Q/A's.
 
 4. **Asking Questions**: Use the "Ask your question here..." input field to ask questions related to the content of the uploaded PDFs.
 
