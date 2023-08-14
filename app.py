@@ -17,7 +17,7 @@ import os
 import random
 import itertools
 
-@st.cache_data()
+@st.cache_data(show_spinner=False)
 def generate_eval(text, N, chunk):
     n = len(text)
     if n != 0:
@@ -34,7 +34,7 @@ def generate_eval(text, N, chunk):
       eval_set_full = list(itertools.chain.from_iterable(eval_set))
       return eval_set_full
 
-@st.cache_data()
+@st.cache_data(show_spinner=False)
 def get_pdf_text(pdf_docs):
     text = ""
 
@@ -45,7 +45,7 @@ def get_pdf_text(pdf_docs):
 
     return text
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_text_chunks(text):
     text_splitter = CharacterTextSplitter(
         separator="\n",
@@ -56,7 +56,7 @@ def get_text_chunks(text):
     chunks = text_splitter.split_text(text)
     return chunks
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_vectorstore(text_chunks):
     st.session_state.client = qdrant_client.QdrantClient(
         os.getenv("QDRANT_HOST"),
@@ -79,7 +79,7 @@ def get_vectorstore(text_chunks):
     vectorstore.add_texts(text_chunks)
     return vectorstore
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_conversation_chain(_vectorstore):
     llm = ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo')
     memory = ConversationBufferMemory(
@@ -92,7 +92,7 @@ def get_conversation_chain(_vectorstore):
 
     return conversation_chain
 
-@st.cache_data(persist=True)
+@st.cache_data(show_spinner=False)
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
     st.session_state.chat_history = response['chat_history']
