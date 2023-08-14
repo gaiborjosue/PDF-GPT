@@ -32,25 +32,17 @@ def get_text_chunks(text):
   chunks = text_splitter.split_text(text)
   return chunks
 
-def get_vectorstore(text_chunks):
-  st.session_state.client = qdrant_client.QdrantClient(
-    os.getenv("QDRANT_HOST"),
-    api_key=os.getenv("QDRANT_API_KEY")
-  )
-  st.session_state.vectors_config = qdrant_client.http.models.VectorParams(size=1536, distance= qdrant_client.http.models.Distance.COSINE)
-
-  st.session_state.client.recreate_collection(
-    collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
-    vectors_config = st.session_state.vectors_config
-  )
+def get_vectorstore(text_chunks, _client):
   embeddings = OpenAIEmbeddings()
 
   vectorstore=Qdrant(
-    client=st.session_state.client,
+    client=_client,
     collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
-    embeddings=embeddings
+    embeddings=embeddings,
   )
-  vectorstore.add_texts(text_chunks)
+
+  
+
   return vectorstore
 
 def get_conversation_chain(vectorstore):
@@ -71,13 +63,24 @@ def handle_userinput(user_question):
     if i % 2 == 0:
       with st.chat_message("user"):
         st.write(mes.content)
-
+      st.session_state.
     else:
       with st.chat_message("assistant"):
         st.write(mes.content)
 
 def main():
   load_dotenv()
+
+  client = qdrant_client.QdrantClient(
+    os.getenv("QDRANT_HOST"),
+    api_key=os.getenv("QDRANT_API_KEY")
+  )
+  vectors_config = qdrant_client.http.models.VectorParams(size=1536, distance= qdrant_client.http.models.Distance.COSINE)
+
+  client.recreate_collection(
+    collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+    vectors_config = vectors_config
+  )
 
   if "conversation" not in st.session_state:
     st.session_state.conversation = None
@@ -109,7 +112,8 @@ def main():
         text_chunks = get_text_chunks(raw_text)
 
         # Create vector storage
-        vectorstore = get_vectorstore(text_chunks)
+        vectorstore = get_vectorstore(text_chunks, client)
+        vectorstore.add_texts(text_chunks)
         
         # Conversation chain
         st.session_state.conversation = get_conversation_chain(vectorstore)
