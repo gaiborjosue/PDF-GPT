@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit_extras.colored_header import colored_header
+from streamlit_extras.stateful_button import button
 from streamlit_chat import message
 from dotenv import load_dotenv
 from pypdf import PdfReader
@@ -183,6 +184,7 @@ def main():
 
     with st.sidebar:
       st.title("🤖 PDF GPT")
+      st.markdown("You can submit an issue here: [Issue](https://github.com/gaiborjosue/PDF-GPT/issues)")
       st.divider()
       st.subheader("Your documents 📄")
 
