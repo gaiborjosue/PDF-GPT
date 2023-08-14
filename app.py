@@ -10,12 +10,10 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chains import QAGenerationChain
 from langchain.chat_models import ChatOpenAI
-from htmlTemplates import css, bot_template, user_template
 import qdrant_client
 import os
 import random
 import itertools
-from tempfile import NamedTemporaryFile
 
 @st.cache_data()
 def generate_eval(text, N, chunk):
@@ -206,7 +204,7 @@ def main():
                     vectorstore)
                 
 
-                st.sidebar.subheader("Auto-Generated Questions:")
+                st.sidebar.subheader("Auto-Generated Review Questions:")
 
                 st.session_state.eval_set = generate_eval(raw_text, N=5, chunk=3000)
 
@@ -226,5 +224,9 @@ def main():
                 st.balloons() 
 
 if __name__ == '__main__':
+  try:
     main()
+
+  except:
+    st.error("Oops! Something went wrong. Please try again later. 😅")
 
