@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit_chat import message
+from streamlit_option_menu import option_menu
 from dotenv import load_dotenv
 from pypdf import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
@@ -12,110 +13,132 @@ from htmlTemplates import css, bot_template, user_template
 import qdrant_client
 import os
 
+
 def get_pdf_text(pdf_docs):
-  text = ""
+    text = ""
 
-  for pdf in pdf_docs:
-    pdf_reader = PdfReader(pdf)
-    for page in pdf_reader.pages:
-      text += page.extract_text()
+    for pdf in pdf_docs:
+        pdf_reader = PdfReader(pdf)
+        for page in pdf_reader.pages:
+            text += page.extract_text()
 
-  return text
+    return text
+
 
 def get_text_chunks(text):
-  text_splitter = CharacterTextSplitter(
-    separator="\n",
-    chunk_size=1000,
-    chunk_overlap=200,
-    length_function=len
-  )
-  chunks = text_splitter.split_text(text)
-  return chunks
+    text_splitter = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
+    )
+    chunks = text_splitter.split_text(text)
+    return chunks
+
 
 def get_vectorstore(text_chunks):
-  st.session_state.client = qdrant_client.QdrantClient(
-    os.getenv("QDRANT_HOST"),
-    api_key=os.getenv("QDRANT_API_KEY")
-  )
-  st.session_state.vectors_config = qdrant_client.http.models.VectorParams(size=1536, distance= qdrant_client.http.models.Distance.COSINE)
+    st.session_state.client = qdrant_client.QdrantClient(
+        os.getenv("QDRANT_HOST"),
+        api_key=os.getenv("QDRANT_API_KEY")
+    )
+    st.session_state.vectors_config = qdrant_client.http.models.VectorParams(
+        size=1536, distance=qdrant_client.http.models.Distance.COSINE)
 
-  st.session_state.client.recreate_collection(
-    collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
-    vectors_config = st.session_state.vectors_config
-  )
-  embeddings = OpenAIEmbeddings()
+    st.session_state.client.recreate_collection(
+        collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+        vectors_config=st.session_state.vectors_config
+    )
+    embeddings = OpenAIEmbeddings()
 
-  vectorstore=Qdrant(
-    client=st.session_state.client,
-    collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
-    embeddings=embeddings
-  )
-  vectorstore.add_texts(text_chunks)
-  return vectorstore
+    vectorstore = Qdrant(
+        client=st.session_state.client,
+        collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+        embeddings=embeddings
+    )
+    vectorstore.add_texts(text_chunks)
+    return vectorstore
+
 
 def get_conversation_chain(vectorstore):
-  llm = ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo')
-  memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-  conversation_chain = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    retriever=vectorstore.as_retriever(),
-    memory=memory,
-  )
-  return conversation_chain
+    llm = ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo')
+    memory = ConversationBufferMemory(
+        memory_key="chat_history", return_messages=True)
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(),
+        memory=memory,
+    )
+    return conversation_chain
+
 
 def handle_userinput(user_question):
-  response = st.session_state.conversation({'question': user_question})
-  st.session_state.chat_history = response['chat_history']
+    response = st.session_state.conversation({'question': user_question})
+    st.session_state.chat_history = response['chat_history']
 
-  for i, mes in enumerate(st.session_state.chat_history):
-    if i % 2 == 0:
-      with st.chat_message("user"):
-        st.write(mes.content)
+    for i, mes in enumerate(st.session_state.chat_history):
+        if i % 2 == 0:
+            with st.chat_message("user"):
+                st.write(mes.content)
 
-    else:
-      with st.chat_message("assistant"):
-        st.write(mes.content)
+        else:
+            with st.chat_message("assistant"):
+                st.write(mes.content)
+
 
 def main():
-  load_dotenv()
+    load_dotenv()
 
-  if "conversation" not in st.session_state:
-    st.session_state.conversation = None
-  
-  if "chat_history" not in st.session_state:
-    st.session_state.chat_history = None
+    if "conversation" not in st.session_state:
+        st.session_state.conversation = None
 
-  st.set_page_config(page_title="PDF GPT", page_icon=":books:")
-  st.write(css, unsafe_allow_html=True)
-  st.header("Ask questions about your PDFs - PDF GPT :books:")
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = None
 
+    st.set_page_config(page_title="PDF GPT", page_icon=":books:")
+    st.write(css, unsafe_allow_html=True)
+    
+    selected = option_menu(
+            menu_title=None,
+            options=["PDF GPT", "About", "Feedback"],
+            icons=["filetype-pdf", "info-circle", "recycle"],
+            orientation="horizontal",
+            default_index=0
+        )
+    
 
-  st.session_state.user_question = st.chat_input("Ask your question here...")
-  st.info('If you want to reset, just reload the page or remove your PDFs😉', icon="ℹ️")
-  if st.session_state.user_question:
-    handle_userinput(st.session_state.user_question)
+    if selected == "PDF GPT":
+      st.header("Ask questions about your PDFs - PDF GPT :books:")
+      st.session_state.user_question = st.chat_input("Ask your question here...")
+      st.info('If you want to reset, just reload the page or remove your PDFs😉', icon="ℹ️")
 
-  with st.sidebar:
-     st.subheader("Your documents 📄")
+      if st.session_state.user_question:
+        handle_userinput(st.session_state.user_question)
 
-     pdf_docs = st.file_uploader("Upload your PDFs here and click on Process ⬆️", accept_multiple_files=True)
+      with st.sidebar:
+        st.subheader("Your documents 📄")
 
-     if st.button("Process 🔍"):
-      with st.spinner("Processing..."):
-        # Get pdf text
-        raw_text = get_pdf_text(pdf_docs)
-      
-        # Get text chuncks
-        text_chunks = get_text_chunks(raw_text)
+        pdf_docs = st.file_uploader(
+            "Upload your PDFs here and click on Process ⬆️", accept_multiple_files=True)
 
-        # Create vector storage
-        vectorstore = get_vectorstore(text_chunks)
-        
-        # Conversation chain
-        st.session_state.conversation = get_conversation_chain(vectorstore)
-        st.success("Successfully Processed your PDFs!")
-        st.balloons()
+        if st.button("Process 🔍"):
+            with st.spinner("Processing..."):
+                # Get pdf text
+                raw_text = get_pdf_text(pdf_docs)
 
+                # Get text chuncks
+                text_chunks = get_text_chunks(raw_text)
+
+                # Create vector storage
+                vectorstore = get_vectorstore(text_chunks)
+
+                # Conversation chain
+                st.session_state.conversation = get_conversation_chain(
+                    vectorstore)
+                st.success("Successfully Processed your PDFs!")
+                st.balloons()
+
+    if selected == "About":
+        st.header("PDF GPT - MultiPDF assistant")
 
     
 if __name__ == '__main__':
