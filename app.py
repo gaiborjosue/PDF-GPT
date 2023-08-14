@@ -1,9 +1,6 @@
 import streamlit as st
 from streamlit_extras.colored_header import colored_header
-from streamlit_extras.stateful_button import button
-import webbrowser
 from streamlit_chat import message
-from streamlit_option_menu import option_menu
 from dotenv import load_dotenv
 from pypdf import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
@@ -18,6 +15,7 @@ import qdrant_client
 import os
 import random
 import itertools
+from tempfile import NamedTemporaryFile
 
 @st.cache_data()
 def generate_eval(text, N, chunk):
@@ -35,7 +33,6 @@ def generate_eval(text, N, chunk):
               pass
       eval_set_full = list(itertools.chain.from_iterable(eval_set))
       return eval_set_full
-
 
 @st.cache_data()
 def get_pdf_text(pdf_docs):
@@ -226,8 +223,7 @@ def main():
                   )
 
                 st.success("Successfully Processed your PDFs!")
-                st.balloons()
-        
+                st.balloons() 
 
 if __name__ == '__main__':
     main()
