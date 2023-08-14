@@ -62,10 +62,11 @@ def handle_userinput(user_question):
 
   for i, mes in enumerate(st.session_state.chat_history):
     if i % 2 == 0:
-
-      message(mes.content, is_user=True)
+      with st.chat_message("user"):
+        st.write(mes.content)
     else:
-      message(mes.content)
+      with st.chat_message("assistant"):
+        st.write(mes.content)
 
 def main():
   load_dotenv()
@@ -87,21 +88,26 @@ def main():
   if "chat_history" not in st.session_state:
     st.session_state.chat_history = None
 
+  if "user_question" not in st.session_state:
+    st.session_state.user_question = None
+
   st.set_page_config(page_title="PDF GPT", page_icon=":books:")
   st.write(css, unsafe_allow_html=True)
   st.header("Ask questions about your PDFs - PDF GPT :books:")
-  user_question = st.text_input("Ask a question about your documents:")
 
-  if user_question:
-    handle_userinput(user_question)
+
+  st.session_state.user_question = st.chat_input("Ask your question here...")
+  st.info('If you want to reset, just reload the page 😉', icon="ℹ️")
+  if st.session_state.user_question:
+    handle_userinput(st.session_state.user_question)
 
   with st.sidebar:
-     st.subheader("Your documents")
+     st.subheader("Your documents 📄")
 
-     pdf_docs = st.file_uploader("Upload your PDFs here and click on Process", accept_multiple_files=True)
+     pdf_docs = st.file_uploader("Upload your PDFs here and click on Process ⬆️", accept_multiple_files=True)
 
-     if st.button("Process"):
-      with st.spinner("Processing"):
+     if st.button("Process 🔍"):
+      with st.spinner("Processing..."):
         # Get pdf text
         raw_text = get_pdf_text(pdf_docs)
       
@@ -113,6 +119,8 @@ def main():
 
         # Conversation chain
         st.session_state.conversation = get_conversation_chain(vectorstore)
+        st.success("Successfully Processed your PDFs!")
+        st.balloons()
 
 
     
