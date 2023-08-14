@@ -226,7 +226,6 @@ def main():
                   )
 
                 st.success("Successfully Processed your PDFs!")
-                st.balloons() 
 
 if __name__ == '__main__':
   try:
