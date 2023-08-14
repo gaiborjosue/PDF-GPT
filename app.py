@@ -1,4 +1,6 @@
 import streamlit as st
+from streamlit_extras.colored_header import colored_header
+import webbrowser
 from streamlit_chat import message
 from streamlit_option_menu import option_menu
 from dotenv import load_dotenv
@@ -102,12 +104,17 @@ def main():
             options=["PDF GPT", "About", "Feedback"],
             icons=["filetype-pdf", "info-circle", "recycle"],
             orientation="horizontal",
-            default_index=0
+            default_index=0,
         )
     
 
     if selected == "PDF GPT":
-      st.header("Ask questions about your PDFs - PDF GPT :books:")
+      colored_header(
+          label="Ask questions about your PDFs - PDF GPT :books:",
+          description=None,
+          color_name="red-70"
+      )
+
       st.session_state.user_question = st.chat_input("Ask your question here...")
       st.info('If you want to reset, just reload the page or remove your PDFs😉', icon="ℹ️")
 
@@ -140,6 +147,10 @@ def main():
     if selected == "About":
         st.header("PDF GPT - MultiPDF assistant")
 
-    
+    if selected == "Feedback":
+        webbrowser.open("https://github.com/gaiborjosue/PDF-GPT/issues")
+        
+
+
 if __name__ == '__main__':
     main()
