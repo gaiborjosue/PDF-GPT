@@ -127,13 +127,17 @@ def main():
 
     if "eval_set" not in st.session_state:
         st.session_state.eval_set = None
-
+    
     st.set_page_config(page_title="PDF GPT", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
-    
+
     st.markdown(
         """
+
         <style>
+            #MainMenu {visibility: hidden;}
+            footer: {visibility: hidden;}
+            
             .css-card {
                 border-radius: 0px;
                 padding: 30px 10px 10px 10px;
@@ -179,6 +183,7 @@ def main():
     st.session_state.user_question = st.chat_input("Ask your question here...")
     st.info('If you want to reset, just reload the page or remove your PDFs😉', icon="ℹ️")
     
+    
     if st.session_state.user_question:
         handle_userinput(st.session_state.user_question)
 
@@ -207,7 +212,6 @@ def main():
                 # Conversation chain
                 st.session_state.conversation = get_conversation_chain(
                     vectorstore)
-                
 
                 st.sidebar.subheader("Auto-Generated Review Questions:")
 
@@ -228,9 +232,9 @@ def main():
                 st.success("Successfully Processed your PDFs!")
 
 if __name__ == '__main__':
-  try:
-    main()
+    try:
+      main()
+    except:
+      st.error("Oops! Something went wrong. Please try again later. 😅")
 
-  except:
-    st.error("Oops! Something went wrong. Please try again later. 😅")
 
