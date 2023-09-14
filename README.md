@@ -1,6 +1,6 @@
 # PDF GPT AI assistant
 
-The PDF GPT Chrome Extension allows users to upload multiple PDF files and ask questions about their contents using the GPT-3.5 conversational AI model. This extension leverages LangChain and OpenAI's GPT-3.5 to provide insightful answers to user queries based on the uploaded PDFs.
+The PDF GPT website that allows users to upload multiple PDF files and ask questions about their contents using the GPT-3.5 conversational AI model. This extension leverages LangChain and OpenAI's GPT-3.5 to provide insightful answers to user queries based on the uploaded PDFs.
 
 ## Quick Demo:
 ![](https://github.com/gaiborjosue/PDF-GPT/blob/main/resources/streamlitdemo.gif)
