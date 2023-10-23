@@ -36,6 +36,7 @@ The PDF GPT website that allows users to upload multiple PDF files and ask quest
 ## Acknowledgments
 
 - This project utilizes Streamlit, LangChain, and OpenAI's GPT-3.5. Special thanks to the authors and contributors of these libraries.
+- I took inspiration from [Alejandro AO](https://www.youtube.com/@alejandro_ao)
 
 ## Feedback and Support
 
@@ -44,5 +45,3 @@ If you encounter any issues or have suggestions for improvement, please feel fre
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-I took inspiration from [Alejandro AO](https://www.youtube.com/@alejandro_ao)
