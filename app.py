@@ -232,9 +232,7 @@ def main():
                 st.success("Successfully Processed your PDFs!")
 
 if __name__ == '__main__':
-    try:
-      main()
-    except:
-      st.error("Oops! Something went wrong. Please try again later. 😅")
+    main()
+
 
 
